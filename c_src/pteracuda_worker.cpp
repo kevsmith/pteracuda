@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include <unistd.h>
+#include "cuda_runtime_api.h"
 #include "pteracuda_worker.h"
 
 int handle_command(pcuda_command *command) {
@@ -19,6 +19,7 @@ void *pcuda_worker_loop(void *args) {
         }
     }
     enif_mutex_unlock(worker->command_guard);
+    cudaThreadExit();
     return NULL;
 }
 
