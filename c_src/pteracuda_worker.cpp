@@ -14,7 +14,9 @@ void *pcuda_worker_loop(void *args) {
         enif_cond_wait(worker->command_flag, worker->command_guard);
         if (worker->queue->size() > 0) {
             pcuda_command *cmd = worker->queue->front();
+            enif_mutex_unlock(worker->command_guard);
             keep_running = handle_command(cmd);
+            enif_mutex_lock(worker->command_guard);
             free(cmd);
         }
     }
