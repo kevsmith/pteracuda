@@ -16,6 +16,7 @@ typedef struct _pcuda_worker {
     ErlNifTid tid;
     ErlNifMutex *command_guard;
     ErlNifCond *command_flag;
+    ErlNifEnv *env;
     std::deque<pcuda_command *> *queue;
 } pcuda_worker;
 

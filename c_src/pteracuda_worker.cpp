@@ -1,13 +1,21 @@
 #include <unistd.h>
 #include "cuda_runtime_api.h"
 #include "pteracuda_worker.h"
+#include "pteracuda_commands.h"
 
 int handle_command(pcuda_command *command) {
-    return 0;
+    int retval = 1;
+    switch(command->cmd) {
+    case PCUDA_CMD_SHUTDOWN:
+        retval = 0;
+        break;
+    }
+    return retval;
 }
 
 void *pcuda_worker_loop(void *args) {
     pcuda_worker *worker = (pcuda_worker *) args;
+    worker->env = enif_alloc_env();
     int keep_running = 1;
     enif_mutex_lock(worker->command_guard);
     while(keep_running) {
@@ -20,6 +28,7 @@ void *pcuda_worker_loop(void *args) {
             free(cmd);
         }
     }
+    enif_free_env(worker->env);
     enif_mutex_unlock(worker->command_guard);
     cudaThreadExit();
     return NULL;
@@ -46,6 +55,7 @@ int pcuda_create_worker(pcuda_worker *worker) {
 void pcuda_destroy_worker(pcuda_worker *worker) {
     if (worker->running) {
         pcuda_command *cmd = (pcuda_command *) malloc(sizeof(pcuda_command));
+        cmd->cmd = PCUDA_CMD_SHUTDOWN;
         pcuda_enqueue_command(worker, cmd);
         enif_thread_join(worker->tid, NULL);
     }
