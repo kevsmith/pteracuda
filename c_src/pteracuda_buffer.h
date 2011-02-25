@@ -2,18 +2,17 @@
 #define PCUDA_BUFFER
 
 enum pcuda_types {
-    PCUDA_LONG,
-    PCUDA_INT,
-    PCUDA_FLOAT,
-    PCUDA_CHAR
+    PCUDA_TYPE_INT,
+    PCUDA_TYPE_LONG,
+    PCUDA_TYPE_FLOAT
 };
 
-typedef struct _pcuda_buffer {
-    pcuda_types dtype;
-    void *buffer;
-} pcuda_buffer;
+struct pcuda_buffer {
+    pcuda_types data_type;
+    void *data;
+};
 
-int pcuda_new_buffer(pcuda_buffer *buffer, pcuda_types buffer_type);
+int pcuda_new_buffer(pcuda_buffer *buffer, pcuda_types desired_type);
 void pcuda_destroy_buffer(pcuda_buffer *buffer);
 
 #endif

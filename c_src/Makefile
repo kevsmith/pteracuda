@@ -1,5 +1,5 @@
 all: *.cu
-	nvcc -shared -c -Xcompiler -fPIC $?
+	nvcc -O2 -shared -c -Xcompiler -fPIC $?
 
 clean: *.cu
 	nvcc -c -clean $?

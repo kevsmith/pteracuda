@@ -2,28 +2,36 @@
 
 #include "pteracuda_buffer.h"
 
-void destroy_device_buffer(pcuda_buffer *buffer) {
-    if (buffer->dtype == PCUDA_LONG) {
-        thrust::device_vector<long> *data = (thrust::device_vector<long> *) buffer->buffer;
-        delete data;
+int pcuda_new_buffer(pcuda_buffer *buffer, pcuda_types desired_type) {
+    int retval = 1;
+    switch(desired_type) {
+    case PCUDA_TYPE_INT:
+        buffer->data = (void *) new thrust::device_vector<int>();
+        break;
+    case PCUDA_TYPE_LONG:
+        buffer->data = (void *) new thrust::device_vector<long>();
+        break;
+    default:
+        buffer->data = NULL;
+        retval = 0;
     }
-    else if(buffer->dtype == PCUDA_INT) {
-        thrust::device_vector<int> *data = (thrust::device_vector<int> *) buffer->buffer;
-        delete data;
+    if (retval) {
+        buffer->data_type = desired_type;
     }
-    else if(buffer->dtype == PCUDA_FLOAT) {
-        thrust::device_vector<float> *data = (thrust::device_vector<float> *) buffer->buffer;
-        delete data;
-    }
-    else if(buffer->dtype == PCUDA_CHAR) {
-        thrust::device_vector<char> *data = (thrust::device_vector<char> *) buffer->buffer;
-        delete data;
-    }
-}
-
-int pcuda_new_buffer(pcuda_buffer *buffer, pcuda_types buffer_type) {
-    return 0;
+    return retval;
 }
 
 void pcuda_destroy_buffer(pcuda_buffer *buffer) {
+    if (buffer->data != NULL) {
+        switch(buffer->data_type) {
+        case PCUDA_TYPE_INT:
+            delete (thrust::device_vector<int> *) buffer->data;
+            break;
+        case PCUDA_TYPE_LONG:
+            delete (thrust::device_vector<long> *) buffer->data;
+            break;
+        default:
+            break;
+        }
+    }
 }
