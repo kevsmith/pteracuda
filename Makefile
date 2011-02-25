@@ -5,6 +5,7 @@ compile:
 
 clean:
 	@./rebar clean
+	@rm -f c_src/*.o c_src/*flymake.h
 
 test:
 	@./rebar eunit

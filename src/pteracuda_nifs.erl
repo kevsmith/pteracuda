@@ -13,12 +13,20 @@
 
 %% API
 -export([new_worker/0,
-         destroy_worker/1]).
+         destroy_worker/1,
+         new_buffer/2,
+         destroy_buffer/3]).
 
 new_worker() ->
     ?MISSING_NIF.
 
 destroy_worker(_Worker) ->
+    ?MISSING_NIF.
+
+new_buffer(_Worker, _Caller) ->
+    ?MISSING_NIF.
+
+destroy_buffer(_Worker, _Buffer, _Caller) ->
     ?MISSING_NIF.
 
 init() ->
