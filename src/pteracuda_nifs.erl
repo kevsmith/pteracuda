@@ -14,8 +14,8 @@
 %% API
 -export([new_worker/0,
          destroy_worker/1,
-         new_buffer/2,
-         destroy_buffer/3]).
+         new_buffer/1,
+         destroy_buffer/1]).
 
 new_worker() ->
     ?MISSING_NIF.
@@ -23,11 +23,12 @@ new_worker() ->
 destroy_worker(_Worker) ->
     ?MISSING_NIF.
 
-new_buffer(_Worker, _Caller) ->
+new_buffer(_Worker) ->
     ?MISSING_NIF.
 
-destroy_buffer(_Worker, _Buffer, _Caller) ->
+destroy_buffer(_Worker) ->
     ?MISSING_NIF.
+
 
 init() ->
     PrivDir = case code:priv_dir(pteracuda) of
@@ -41,7 +42,19 @@ init() ->
     erlang:load_nif(SoName, ?NIF_API_VERSION).
 
 -ifdef(TEST).
+
 create_destroy_test() ->
     {ok, W} = pteracuda_nifs:new_worker(),
-    pteracuda_nifs:destroy_worker(W).
+    ok = pteracuda_nifs:destroy_worker(W),
+    %% Can destroy a worker just once
+    error = pteracuda_nifs:destroy_worker(W).
+
+int_alloc_destroy_test() ->
+    {ok, W} = pteracuda_nifs:new_worker(),
+    ok = pteracuda_nifs:new_buffer(W),
+    ok = pteracuda_nifs:destroy_buffer(W),
+    %% Can destroy a buffer just once
+    error = pteracuda_nifs:destroy_buffer(W),
+    ok.
+
 -endif.
