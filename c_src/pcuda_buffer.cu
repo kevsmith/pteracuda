@@ -1,13 +1,23 @@
+#include <stdio.h>
+
 #include "pcuda_buffer.h"
 
-PcudaIntBuffer::PcudaIntBuffer() {
-    this->data = new thrust::device_vector<int>();
+PcudaLongBuffer::PcudaLongBuffer() {
+    this->data = new std::vector<long>();
 }
 
-PcudaIntBuffer::~PcudaIntBuffer() {
+PcudaLongBuffer::~PcudaLongBuffer() {
     delete this->data;
 }
 
-pcuda_types PcudaIntBuffer::getBufferType() {
-    return PCUDA_TYPE_INT;
+void PcudaLongBuffer::write(std::vector<long> *data) {
+    this->data->insert(this->data->end(), data->begin(), data->end());
+}
+
+long PcudaLongBuffer::size() {
+    return this->data->size();
+}
+
+void PcudaLongBuffer::clear() {
+    this->data->clear();
 }

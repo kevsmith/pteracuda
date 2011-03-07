@@ -19,7 +19,9 @@
 // under the License.
 //
 // -------------------------------------------------------------------
+#include <stdio.h>
 #include <string.h>
+#include <vector>
 
 #include "erl_nif.h"
 #include "pteracuda_common.h"
@@ -33,12 +35,16 @@ extern "C" {
     ERL_NIF_TERM pteracuda_nifs_destroy_worker(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_new_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_destroy_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+    ERL_NIF_TERM pteracuda_nifs_buffer_length(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+    ERL_NIF_TERM pteracuda_nifs_write_integers(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
 
     static ErlNifFunc pteracuda_nif_funcs[] = {
         {"new_worker", 0, pteracuda_nifs_new_worker},
         {"destroy_worker", 1, pteracuda_nifs_destroy_worker},
         {"new_buffer", 1, pteracuda_nifs_new_buffer},
-        {"destroy_buffer", 1, pteracuda_nifs_destroy_buffer}
+        {"destroy_buffer", 1, pteracuda_nifs_destroy_buffer},
+        {"write_integers", 2, pteracuda_nifs_write_integers},
+        {"buffer_length", 1, pteracuda_nifs_buffer_length}
     };
 }
 
@@ -102,8 +108,8 @@ ERL_NIF_TERM pteracuda_nifs_new_buffer(ErlNifEnv *env, int argc, const ERL_NIF_T
     PcudaWorkerCommand *cmd = new PcudaWorkerCommand();
     cmd->cmd = NEW_INT_BUFFER;
     worker->enqueueCommand(cmd);
-    bool *result = (bool *) cmd->result;
-    if (*result == true) {
+    bool result = (bool) cmd->result;
+    if (result == true) {
         retval = ATOM_OK;
     }
     else {
@@ -123,13 +129,61 @@ ERL_NIF_TERM pteracuda_nifs_destroy_buffer(ErlNifEnv *env, int argc, const ERL_N
     PcudaWorkerCommand *cmd = new PcudaWorkerCommand();
     cmd->cmd = DESTROY_BUFFER;
     worker->enqueueCommand(cmd);
-    bool *result = (bool *) cmd->result;
-    if (*result == true) {
+    bool result = (bool) cmd->result;
+    if (result == true) {
         retval = ATOM_OK;
     }
     else {
         retval = ATOM_ERROR;
     }
+    delete cmd;
+    return retval;
+}
+
+ERL_NIF_TERM pteracuda_nifs_buffer_length(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    ERL_NIF_TERM retval;
+    pcuda_worker_handle *handle;
+    if (argc != 1 || !enif_get_resource(env, argv[0], pteracuda_worker_resource, (void **) &handle)) {
+        return enif_make_badarg(env);
+    }
+    PcudaWorker *worker = handle->ref;
+    PcudaWorkerCommand *cmd = new PcudaWorkerCommand();
+    cmd->cmd = GET_BUFFER_SIZE;
+    worker->enqueueCommand(cmd);
+    long result = (long) cmd->result;
+    retval = enif_make_tuple2(env, ATOM_OK, enif_make_long(env, result));
+    delete cmd;
+    return retval;
+}
+
+ERL_NIF_TERM pteracuda_nifs_write_integers(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    ERL_NIF_TERM retval;
+    long currentValue;
+    pcuda_worker_handle *handle;
+    if (argc != 2 || !enif_get_resource(env, argv[0], pteracuda_worker_resource, (void **) &handle) ||
+        !enif_is_list(env, argv[1])) {
+        return enif_make_badarg(env);
+    }
+    PcudaWorker *worker = handle->ref;
+    std::vector<long> *values = new std::vector<long>();
+    ERL_NIF_TERM head, tail;
+    enif_get_list_cell(env, argv[1], &head, &tail);
+    do {
+        enif_get_long(env, head, &currentValue);
+        values->push_back(currentValue);
+    } while (enif_get_list_cell(env, tail, &head, &tail));
+    PcudaWorkerCommand *cmd = new PcudaWorkerCommand();
+    cmd->cmd = APPEND_BUFFER;
+    cmd->arg = values;
+    worker->enqueueCommand(cmd);
+    bool result = (bool) cmd->result;
+    if (result == true) {
+        retval = ATOM_OK;
+    }
+    else {
+        retval = ATOM_ERROR;
+    }
+    delete values;
     delete cmd;
     return retval;
 }

@@ -15,7 +15,11 @@
 -export([new_worker/0,
          destroy_worker/1,
          new_buffer/1,
-         destroy_buffer/1]).
+         destroy_buffer/1,
+         buffer_length/1]).
+
+%% Data transfer API
+-export([write_integers/2]).
 
 new_worker() ->
     ?MISSING_NIF.
@@ -29,6 +33,11 @@ new_buffer(_Worker) ->
 destroy_buffer(_Worker) ->
     ?MISSING_NIF.
 
+write_integers(_Worker, _Nums) ->
+    ?MISSING_NIF.
+
+buffer_length(_Worker) ->
+    ?MISSING_NIF.
 
 init() ->
     PrivDir = case code:priv_dir(pteracuda) of
@@ -56,5 +65,12 @@ int_alloc_destroy_test() ->
     %% Can destroy a buffer just once
     error = pteracuda_nifs:destroy_buffer(W),
     ok.
+
+int_alloc_write_destroy_test() ->
+    {ok, W} = pteracuda_nifs:new_worker(),
+    ok = pteracuda_nifs:new_buffer(W),
+    ok = pteracuda_nifs:write_integers(W, [1,2,3,4,5]),
+    ?assertMatch({ok, 5}, pteracuda_nifs:buffer_length(W)),
+    ok = pteracuda_nifs:destroy_buffer(W).
 
 -endif.

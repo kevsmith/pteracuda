@@ -1,4 +1,4 @@
-all: compile test
+all: compile eunit
 
 compile:
 	@./rebar compile
@@ -6,9 +6,6 @@ compile:
 clean:
 	@./rebar clean
 	@rm -f c_src/*.o c_src/*flymake.h
-
-test:
-	@./rebar eunit
 
 eunit:
 	@./rebar eunit

@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <vector>
 #include "cuda_runtime_api.h"
 #include "erl_nif.h"
 
@@ -8,11 +9,13 @@
 
 PcudaWorkerCommand::PcudaWorkerCommand() {
     this->result = NULL;
+    this->arg = NULL;
     this->done = false;
+    this->freeResult = false;
 }
 
 PcudaWorkerCommand::~PcudaWorkerCommand() {
-    if (this->result != NULL) {
+    if (this->result != NULL && this->freeResult) {
         free(this->result);
     }
 }
@@ -121,35 +124,53 @@ const bool PcudaWorker::handleCommand(PcudaWorkerCommand *cmd) {
         return createIntBuffer(cmd);
     case DESTROY_BUFFER:
         return destroyBuffer(cmd);
+    case APPEND_BUFFER:
+        return appendBuffer(cmd);
+    case GET_BUFFER_SIZE:
+        return getBufferSize(cmd);
     default:
         return true;
     }
 }
 
 const bool PcudaWorker::createIntBuffer(PcudaWorkerCommand *cmd) {
-    bool *result = (bool *) malloc(sizeof(bool));
     if (this->buffer == NULL) {
-        this->buffer = new PcudaIntBuffer();
-        *result = true;
+        this->buffer = new PcudaLongBuffer();
+        cmd->result = (void *) true;
     }
     else {
-        *result = false;
+        cmd->result = (void *) false;
     }
-    cmd->result = result;
     return true;
 }
 
 const bool PcudaWorker::destroyBuffer(PcudaWorkerCommand *cmd) {
-    bool *result = (bool *) malloc(sizeof(bool));
     if (this->buffer != NULL) {
         delete this->buffer;
         this->buffer = NULL;
-        *result = true;
+        cmd->result = (void *) true;
     }
     else {
-        *result = false;
+        cmd->result = (void *) false;
     }
-    cmd->result = result;
+    return true;
+}
+
+const bool PcudaWorker::appendBuffer(PcudaWorkerCommand *cmd) {
+    if (this->buffer == NULL) {
+        cmd->result = (void *) false;
+    }
+    else {
+        std::vector<long> *values = (std::vector<long> *) cmd->arg;
+        this->buffer->write(values);
+        cmd->result = (void *) true;
+    }
+    return true;
+}
+
+const bool PcudaWorker::getBufferSize(PcudaWorkerCommand *cmd) {
+    cmd->result = (void *) this->buffer->size();
+    cmd->freeResult = false;
     return true;
 }
 

@@ -1,27 +1,17 @@
 #ifndef PCUDA_BUFFER
 #define PCUDA_BUFFER
 
-#include <thrust/device_vector.h>
+#include <vector>
 
-enum pcuda_types {
-    PCUDA_TYPE_INT,
-    PCUDA_TYPE_LONG,
-    PCUDA_TYPE_FLOAT
-};
-
-/* class PcudaBufferInterface { */
-/* public: */
-/*     virtual ~PcudaBufferInterface(); */
-/*     virtual pcuda_types getBufferType() = 0; */
-/* }; */
-
-class PcudaIntBuffer {
+class PcudaLongBuffer {
 public:
-    PcudaIntBuffer();
-    virtual ~PcudaIntBuffer();
-    virtual pcuda_types getBufferType();
+    PcudaLongBuffer();
+    virtual ~PcudaLongBuffer();
+    void write(std::vector<long> *data);
+    long size();
+    void clear();
 private:
-    thrust::device_vector<int> *data;
+    std::vector<long> *data;
 };
 
 #endif
