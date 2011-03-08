@@ -14,6 +14,11 @@ PcudaWorkerCommand::PcudaWorkerCommand() {
     this->freeResult = false;
 }
 
+PcudaWorkerCommand::PcudaWorkerCommand(PcudaCommandEnum cmd) {
+    PcudaWorkerCommand();
+    this->cmd = cmd;
+}
+
 PcudaWorkerCommand::~PcudaWorkerCommand() {
     if (this->result != NULL && this->freeResult) {
         free(this->result);
@@ -128,6 +133,8 @@ const bool PcudaWorker::handleCommand(PcudaWorkerCommand *cmd) {
         return appendBuffer(cmd);
     case GET_BUFFER_SIZE:
         return getBufferSize(cmd);
+    case READ_BUFFER:
+        return readBuffer(cmd);
     default:
         return true;
     }
@@ -169,8 +176,20 @@ const bool PcudaWorker::appendBuffer(PcudaWorkerCommand *cmd) {
 }
 
 const bool PcudaWorker::getBufferSize(PcudaWorkerCommand *cmd) {
-    cmd->result = (void *) this->buffer->size();
-    cmd->freeResult = false;
+    if (this->buffer == NULL) {
+        cmd->result = (void *) 0;
+    }
+    else {
+        cmd->result = (void *) this->buffer->size();
+    }
+    return true;
+}
+
+const bool PcudaWorker::readBuffer(PcudaWorkerCommand *cmd) {
+    std::vector<long> *values = (std::vector<long> *) cmd->arg;
+    if (this->buffer != NULL) {
+        this->buffer->read(values);
+    }
     return true;
 }
 

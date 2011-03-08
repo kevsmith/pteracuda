@@ -37,6 +37,7 @@ extern "C" {
     ERL_NIF_TERM pteracuda_nifs_destroy_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_buffer_length(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_write_integers(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+    ERL_NIF_TERM pteracuda_nifs_read_integers(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
 
     static ErlNifFunc pteracuda_nif_funcs[] = {
         {"new_worker", 0, pteracuda_nifs_new_worker},
@@ -44,6 +45,7 @@ extern "C" {
         {"new_buffer", 1, pteracuda_nifs_new_buffer},
         {"destroy_buffer", 1, pteracuda_nifs_destroy_buffer},
         {"write_integers", 2, pteracuda_nifs_write_integers},
+        {"read_integers", 1, pteracuda_nifs_read_integers},
         {"buffer_length", 1, pteracuda_nifs_buffer_length}
     };
 }
@@ -186,4 +188,21 @@ ERL_NIF_TERM pteracuda_nifs_write_integers(ErlNifEnv *env, int argc, const ERL_N
     delete values;
     delete cmd;
     return retval;
+}
+
+ERL_NIF_TERM pteracuda_nifs_read_integers(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    ERL_NIF_TERM retval;
+    pcuda_worker_handle *handle;
+    if (argc != 1 || !enif_get_resource(env, argv[0], pteracuda_worker_resource, (void **) &handle)) {
+        return enif_make_badarg(env);
+    }
+    PcudaWorker *worker = handle->ref;
+    PcudaWorkerCommand *cmd = new PcudaWorkerCommand(READ_BUFFER);
+    std::vector<long> *values = new std::vector<long>();
+    cmd->arg = (void *) values;
+    worker->enqueueCommand(cmd);
+    retval = enif_make_list(env, 0);
+    delete values;
+    delete cmd;
+    return enif_make_tuple2(env, ATOM_OK, retval);
 }

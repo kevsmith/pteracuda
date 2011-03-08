@@ -19,7 +19,9 @@
          buffer_length/1]).
 
 %% Data transfer API
--export([write_integers/2]).
+-export([write_integers/2,
+         read_integers/1,
+         sort_integers/1]).
 
 new_worker() ->
     ?MISSING_NIF.
@@ -34,6 +36,12 @@ destroy_buffer(_Worker) ->
     ?MISSING_NIF.
 
 write_integers(_Worker, _Nums) ->
+    ?MISSING_NIF.
+
+read_integers(_Worker) ->
+    ?MISSING_NIF.
+
+sort_integers(_Worker) ->
     ?MISSING_NIF.
 
 buffer_length(_Worker) ->
@@ -71,6 +79,13 @@ int_alloc_write_destroy_test() ->
     ok = pteracuda_nifs:new_buffer(W),
     ok = pteracuda_nifs:write_integers(W, [1,2,3,4,5]),
     ?assertMatch({ok, 5}, pteracuda_nifs:buffer_length(W)),
+    ok = pteracuda_nifs:destroy_buffer(W).
+
+int_alloc_write_read_destroy_test() ->
+    {ok, W} = pteracuda_nifs:new_worker(),
+    ok = pteracuda_nifs:new_buffer(W),
+    ok = pteracuda_nifs:write_integers(W, [1,2,3,4,5]),
+    {ok, [1,2,3,4,5]} = pteracuda_nifs:read_integers(W),
     ok = pteracuda_nifs:destroy_buffer(W).
 
 -endif.

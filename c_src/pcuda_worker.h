@@ -12,7 +12,8 @@ enum PcudaCommandEnum {
     DESTROY_BUFFER = 2,
     GET_BUFFER_SIZE = 3,
     CLEAR_BUFFER = 4,
-    APPEND_BUFFER = 5
+    APPEND_BUFFER = 5,
+    READ_BUFFER = 6
 };
 
 class PcudaWorkerCommand {
@@ -24,6 +25,7 @@ public:
     bool freeResult;
 
     PcudaWorkerCommand();
+    PcudaWorkerCommand(PcudaCommandEnum cmd);
     virtual ~PcudaWorkerCommand();
 };
 
@@ -51,6 +53,7 @@ private:
     const bool destroyBuffer(PcudaWorkerCommand *cmd);
     const bool handleShutdown(PcudaWorkerCommand *cmd);
     const bool appendBuffer(PcudaWorkerCommand *cmd);
+    const bool readBuffer(PcudaWorkerCommand *cmd);
     const bool getBufferSize(PcudaWorkerCommand *cmd);
 
 public:
