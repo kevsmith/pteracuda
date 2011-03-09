@@ -29,6 +29,16 @@ bool PCudaIntBuffer::sort() {
     return pcuda_integer_sort(this->data);
 }
 
+bool PCudaIntBuffer::contains(ErlNifEnv *env, ERL_NIF_TERM rawTarget) {
+    long target;
+    if (enif_get_long(env, rawTarget, &target)) {
+        return pcuda_integer_binary_search(this->data, target);
+    }
+    else {
+        return false;
+    }
+}
+
 ERL_NIF_TERM PCudaIntBuffer::toErlTerms(ErlNifEnv *env) {
     std::vector<long>::iterator iter;
     ERL_NIF_TERM retval = enif_make_list(env, 0);
@@ -39,4 +49,20 @@ ERL_NIF_TERM PCudaIntBuffer::toErlTerms(ErlNifEnv *env) {
         }
     }
     return retval;
+}
+
+void PCudaIntBuffer::clear() {
+    this->data->clear();
+}
+
+bool PCudaIntBuffer::copy(PCudaBuffer *src) {
+    if (src->type() == BUF_TYPE_INTEGER) {
+        PCudaIntBuffer *source = (PCudaIntBuffer *) src;
+        std::vector<long>::iterator iter;
+        for (iter = source->data->begin(); iter != source->data->end(); ++iter) {
+            this->data->push_back(*iter);
+        }
+        return true;
+    }
+    return false;
 }

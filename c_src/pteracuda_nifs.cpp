@@ -37,6 +37,9 @@ extern "C" {
     ERL_NIF_TERM pteracuda_nifs_write_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_read_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_sort_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+    ERL_NIF_TERM pteracuda_nifs_clear_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+    ERL_NIF_TERM pteracuda_nifs_buffer_contains(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+    ERL_NIF_TERM pteracuda_nifs_copy_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
 
     static ErlNifFunc pteracuda_nif_funcs[] = {
         {"new_buffer", 0, pteracuda_nifs_new_buffer},
@@ -44,7 +47,10 @@ extern "C" {
         {"buffer_size", 1, pteracuda_nifs_buffer_size},
         {"write_buffer", 2, pteracuda_nifs_write_buffer},
         {"read_buffer", 1, pteracuda_nifs_read_buffer},
-        {"sort_buffer", 1, pteracuda_nifs_sort_buffer}
+        {"sort_buffer", 1, pteracuda_nifs_sort_buffer},
+        {"clear_buffer", 1, pteracuda_nifs_clear_buffer},
+        {"buffer_contains", 2, pteracuda_nifs_buffer_contains},
+        {"copy_buffer", 2, pteracuda_nifs_copy_buffer},
     };
 }
 
@@ -55,6 +61,8 @@ struct PCudaBufferRef {
     CUcontext ctx;
 };
 
+static ERL_NIF_TERM ATOM_TRUE;
+static ERL_NIF_TERM ATOM_FALSE;
 static ERL_NIF_TERM ATOM_OK;
 static ERL_NIF_TERM ATOM_ERROR;
 static ERL_NIF_TERM ATOM_WRONG_TYPE;
@@ -64,6 +72,8 @@ ERL_NIF_INIT(pteracuda_nifs, pteracuda_nif_funcs, &pteracuda_on_load, NULL, NULL
 
 static int pteracuda_on_load(ErlNifEnv *env, void **priv_data, ERL_NIF_TERM load_info) {
     if (cuInit(0) == CUDA_SUCCESS) {
+        ATOM_TRUE = enif_make_atom(env, "true");
+        ATOM_FALSE = enif_make_atom(env, "false");
         ATOM_OK = enif_make_atom(env, "ok");
         ATOM_ERROR = enif_make_atom(env, "error");
         ATOM_WRONG_TYPE = enif_make_atom(env, "wrong_type");
@@ -99,7 +109,6 @@ ERL_NIF_TERM pteracuda_nifs_destroy_buffer(ErlNifEnv *env, int argc, const ERL_N
     }
     delete ref->buffer;
     cuCtxDestroy(ref->ctx);
-    //cudaThreadExit();
     return ATOM_OK;
 }
 
@@ -144,4 +153,47 @@ ERL_NIF_TERM pteracuda_nifs_read_buffer(ErlNifEnv *env, int argc, const ERL_NIF_
     }
     ERL_NIF_TERM data = ref->buffer->toErlTerms(env);
     return enif_make_tuple2(env, ATOM_OK, data);
+}
+
+ERL_NIF_TERM pteracuda_nifs_clear_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    PCudaBufferRef *ref;
+    if (argc != 1 || !enif_get_resource(env, argv[0], pteracuda_buffer_resource, (void **) &ref)) {
+        return enif_make_badarg(env);
+    }
+    ref->buffer->clear();
+    return ATOM_OK;
+}
+
+ERL_NIF_TERM pteracuda_nifs_buffer_contains(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    PCudaBufferRef *ref;
+    if (argc !=2 || !enif_get_resource(env, argv[0], pteracuda_buffer_resource, (void **) &ref)) {
+        return enif_make_badarg(env);
+    }
+    if (ref->buffer->size() > 0) {
+        cuCtxSetCurrent(ref->ctx);
+        if (ref->buffer->contains(env, argv[1])) {
+            return ATOM_TRUE;
+        }
+        else {
+            return ATOM_FALSE;
+        }
+    }
+    else {
+        return ATOM_FALSE;
+    }
+}
+
+ERL_NIF_TERM pteracuda_nifs_copy_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    PCudaBufferRef *src, *dest;
+    if (argc !=2 || !enif_get_resource(env, argv[0], pteracuda_buffer_resource, (void **) &src) ||
+        !enif_get_resource(env, argv[1], pteracuda_buffer_resource, (void **) &dest)) {
+        return enif_make_badarg(env);
+    }
+
+    if (dest->buffer->copy(src->buffer)) {
+        return ATOM_OK;
+    }
+    else {
+        return ATOM_ERROR;
+    }
 }
