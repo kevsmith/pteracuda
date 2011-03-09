@@ -12,39 +12,31 @@
 -export([init/0]).
 
 %% API
--export([new_worker/0,
-         destroy_worker/1,
-         new_buffer/1,
+-export([new_buffer/0,
          destroy_buffer/1,
-         buffer_length/1]).
+         buffer_size/1]).
 
-%% Data transfer API
--export([write_integers/2,
-         read_integers/1,
-         sort_integers/1]).
+-export([write_buffer/2,
+         read_buffer/1]).
 
-new_worker() ->
+-export([sort_buffer/1]).
+
+new_buffer() ->
     ?MISSING_NIF.
 
-destroy_worker(_Worker) ->
+destroy_buffer(_Buffer) ->
     ?MISSING_NIF.
 
-new_buffer(_Worker) ->
+buffer_size(_Buffer) ->
     ?MISSING_NIF.
 
-destroy_buffer(_Worker) ->
+read_buffer(_Buffer) ->
     ?MISSING_NIF.
 
-write_integers(_Worker, _Nums) ->
+write_buffer(_Buffer, _Data) ->
     ?MISSING_NIF.
 
-read_integers(_Worker) ->
-    ?MISSING_NIF.
-
-sort_integers(_Worker) ->
-    ?MISSING_NIF.
-
-buffer_length(_Worker) ->
+sort_buffer(_Buffer) ->
     ?MISSING_NIF.
 
 init() ->
@@ -61,31 +53,21 @@ init() ->
 -ifdef(TEST).
 
 create_destroy_test() ->
-    {ok, W} = pteracuda_nifs:new_worker(),
-    ok = pteracuda_nifs:destroy_worker(W),
-    %% Can destroy a worker just once
-    error = pteracuda_nifs:destroy_worker(W).
+    {ok, Buf} = pteracuda_nifs:new_buffer(),
+    ok = pteracuda_nifs:destroy_buffer(Buf).
 
-int_alloc_destroy_test() ->
-    {ok, W} = pteracuda_nifs:new_worker(),
-    ok = pteracuda_nifs:new_buffer(W),
-    ok = pteracuda_nifs:destroy_buffer(W),
-    %% Can destroy a buffer just once
-    error = pteracuda_nifs:destroy_buffer(W),
-    ok.
+create_write_destroy_test() ->
+    {ok, Buf} = pteracuda_nifs:new_buffer(),
+    pteracuda_nifs:write_buffer(Buf, [1,2,3,4,5]),
+    {ok, 5} = pteracuda_nifs:buffer_size(Buf),
+    ok = pteracuda_nifs:destroy_buffer(Buf).
 
-int_alloc_write_destroy_test() ->
-    {ok, W} = pteracuda_nifs:new_worker(),
-    ok = pteracuda_nifs:new_buffer(W),
-    ok = pteracuda_nifs:write_integers(W, [1,2,3,4,5]),
-    ?assertMatch({ok, 5}, pteracuda_nifs:buffer_length(W)),
-    ok = pteracuda_nifs:destroy_buffer(W).
-
-int_alloc_write_read_destroy_test() ->
-    {ok, W} = pteracuda_nifs:new_worker(),
-    ok = pteracuda_nifs:new_buffer(W),
-    ok = pteracuda_nifs:write_integers(W, [1,2,3,4,5]),
-    {ok, [1,2,3,4,5]} = pteracuda_nifs:read_integers(W),
-    ok = pteracuda_nifs:destroy_buffer(W).
+create_write_sort_destroy_test() ->
+    {ok, Buf} = pteracuda_nifs:new_buffer(),
+    ok = pteracuda_nifs:write_buffer(Buf, [3,2,1,4,5]),
+    {ok, 5} = pteracuda_nifs:buffer_size(Buf),
+    ok = pteracuda_nifs:sort_buffer(Buf),
+    {ok, [1,2,3,4,5]} = pteracuda_nifs:read_buffer(Buf),
+    ok = pteracuda_nifs:destroy_buffer(Buf).
 
 -endif.
