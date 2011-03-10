@@ -19,6 +19,7 @@ public:
     virtual void write(ErlNifEnv *env, ERL_NIF_TERM data) = 0;
     virtual void clear() = 0;
     virtual bool copy(PCudaBuffer *src) = 0;
+    virtual ERL_NIF_TERM intersect(ErlNifEnv *env, PCudaBuffer *other) = 0;
     virtual ERL_NIF_TERM toErlTerms(ErlNifEnv *env) = 0;
 };
 
@@ -34,6 +35,7 @@ public:
     virtual void write(ErlNifEnv *env, ERL_NIF_TERM data);
     virtual void clear();
     virtual bool copy(PCudaBuffer *src);
+    virtual ERL_NIF_TERM intersect(ErlNifEnv *env, PCudaBuffer *other);
 
 protected:
     std::vector<long> *data;

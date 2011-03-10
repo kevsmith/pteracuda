@@ -66,3 +66,19 @@ bool PCudaIntBuffer::copy(PCudaBuffer *src) {
     }
     return false;
 }
+
+ERL_NIF_TERM PCudaIntBuffer::intersect(ErlNifEnv *env, PCudaBuffer *otherBuffer) {
+    ERL_NIF_TERM retval = enif_make_list(env, 0);
+    std::vector<long> intersection;
+    if (otherBuffer->type() == BUF_TYPE_INTEGER) {
+        PCudaIntBuffer *other = (PCudaIntBuffer *) otherBuffer;
+        pcuda_integer_intersection(this->data, other->data, &intersection);
+        if (intersection.size() > 0) {
+            for (std::vector<long>::iterator iter = intersection.end(); iter != intersection.begin();) {
+                --iter;
+                retval = enif_make_list_cell(env, enif_make_long(env, *iter), retval);
+            }
+        }
+    }
+    return retval;
+}
