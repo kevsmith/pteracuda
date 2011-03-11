@@ -25,6 +25,27 @@ void PCudaIntBuffer::write(ErlNifEnv *env, ERL_NIF_TERM data) {
     }
 }
 
+void PCudaIntBuffer::delete_at(unsigned long position) {
+    std::vector<long>::iterator iter = this->data->begin();
+    for (unsigned long i = 0; i < position; i++) {
+        iter++;
+    }
+    this->data->erase(iter);
+}
+
+bool PCudaIntBuffer::insert_at(unsigned long position, ErlNifEnv *env, ERL_NIF_TERM rawValue) {
+    long value;
+    if (enif_get_long(env, rawValue, &value)) {
+        std::vector<long>::iterator iter = this->data->begin();
+        for (unsigned long i = 0; i < position; i++) {
+            iter++;
+        }
+        this->data->insert(iter, 1, value);
+        return true;
+    }
+    return false;
+}
+
 bool PCudaIntBuffer::sort() {
     return pcuda_integer_sort(this->data);
 }
@@ -81,4 +102,10 @@ ERL_NIF_TERM PCudaIntBuffer::intersect(ErlNifEnv *env, PCudaBuffer *otherBuffer)
         }
     }
     return retval;
+}
+
+ERL_NIF_TERM PCudaIntBuffer::minmax(ErlNifEnv *env) {
+    long minmax[2];
+    pcuda_integer_minmax(this->data, &minmax[0]);
+    return enif_make_tuple2(env, enif_make_long(env, minmax[0]), enif_make_long(env, minmax[1]));
 }

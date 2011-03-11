@@ -7,6 +7,7 @@
 #include <thrust/functional.h>
 #include <thrust/binary_search.h>
 #include <thrust/set_operations.h>
+#include <thrust/extrema.h>
 
 bool pcuda_integer_sort(std::vector<long> *data) {
     thrust::device_vector<long> device = *data;
@@ -24,4 +25,11 @@ void pcuda_integer_intersection(std::vector<long> *first, std::vector<long> *sec
                                 std::vector<long> *intersection) {
     thrust::set_intersection(first->begin(), first->end(),
                              second->begin(), second->end(), std::back_inserter(*intersection));
+}
+
+void pcuda_integer_minmax(std::vector<long> *data, long *minmax) {
+    thrust::pair<std::vector<long>::iterator,
+                 std::vector<long>::iterator> result = thrust::minmax_element(data->begin(), data->end());
+    minmax[0] = *result.first;
+    minmax[1] = *result.second;
 }

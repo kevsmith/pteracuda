@@ -39,11 +39,14 @@ extern "C" {
 
     ERL_NIF_TERM pteracuda_nifs_write_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_read_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+    ERL_NIF_TERM pteracuda_nifs_buffer_delete(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+    ERL_NIF_TERM pteracuda_nifs_buffer_insert(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_sort_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_clear_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_buffer_contains(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_copy_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_buffer_intersection(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+    ERL_NIF_TERM pteracuda_nifs_buffer_minmax(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
 
     static ErlNifFunc pteracuda_nif_funcs[] = {
         {"new_context", 0, pteracuda_nifs_new_context},
@@ -53,12 +56,15 @@ extern "C" {
         {"destroy_buffer", 1, pteracuda_nifs_destroy_buffer},
         {"buffer_size", 1, pteracuda_nifs_buffer_size},
         {"write_buffer", 2, pteracuda_nifs_write_buffer},
+        {"buffer_delete", 2, pteracuda_nifs_buffer_delete},
+        {"buffer_insert", 3, pteracuda_nifs_buffer_insert},
         {"read_buffer", 1, pteracuda_nifs_read_buffer},
         {"sort_buffer", 2, pteracuda_nifs_sort_buffer},
         {"clear_buffer", 1, pteracuda_nifs_clear_buffer},
         {"buffer_contains", 3, pteracuda_nifs_buffer_contains},
         {"copy_buffer", 2, pteracuda_nifs_copy_buffer},
-        {"buffer_intersection", 2, pteracuda_nifs_buffer_intersection}
+        {"buffer_intersection", 3, pteracuda_nifs_buffer_intersection},
+        {"buffer_minmax", 2, pteracuda_nifs_buffer_minmax}
     };
 }
 
@@ -171,6 +177,38 @@ ERL_NIF_TERM pteracuda_nifs_write_buffer(ErlNifEnv *env, int argc, const ERL_NIF
     return ATOM_OK;
 }
 
+ERL_NIF_TERM pteracuda_nifs_buffer_delete(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    PCudaBufferRef *ref;
+    unsigned long position;
+    if (argc != 2 || !enif_get_resource(env, argv[0], pteracuda_buffer_resource, (void **) &ref) ||
+        !enif_get_ulong(env, argv[1], &position)) {
+        return enif_make_badarg(env);
+    }
+    if (position > ref->buffer->size()) {
+        return ATOM_ERROR;
+    }
+    ref->buffer->delete_at(position);
+    return ATOM_OK;
+}
+
+ERL_NIF_TERM pteracuda_nifs_buffer_insert(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    PCudaBufferRef *ref;
+    unsigned long position;
+    if (argc != 3 || !enif_get_resource(env, argv[0], pteracuda_buffer_resource, (void **) &ref) ||
+        !enif_get_ulong(env, argv[1], &position)) {
+        return enif_make_badarg(env);
+    }
+    if (position > ref->buffer->size()) {
+        return ATOM_ERROR;
+    }
+    if (ref->buffer->insert_at(position, env, argv[2])) {
+        return ATOM_OK;
+    }
+    else {
+        return ATOM_ERROR;
+    }
+}
+
 ERL_NIF_TERM pteracuda_nifs_buffer_size(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
     PCudaBufferRef *ref;
     if (argc != 1 || !enif_get_resource(env, argv[0], pteracuda_buffer_resource, (void **) &ref)) {
@@ -250,10 +288,28 @@ ERL_NIF_TERM pteracuda_nifs_copy_buffer(ErlNifEnv *env, int argc, const ERL_NIF_
 }
 
 ERL_NIF_TERM pteracuda_nifs_buffer_intersection(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    PCudaContextRef *ctxRef;
     PCudaBufferRef *first, *second;
-    if (argc !=2 || !enif_get_resource(env, argv[0], pteracuda_buffer_resource, (void **) &first) ||
-        !enif_get_resource(env, argv[1], pteracuda_buffer_resource, (void **) &second)) {
+    if (argc !=3 || !enif_get_resource(env, argv[0], pteracuda_context_resource, (void **) &ctxRef) ||
+        !enif_get_resource(env, argv[1], pteracuda_buffer_resource, (void **) &first) ||
+        !enif_get_resource(env, argv[2], pteracuda_buffer_resource, (void **) &second)) {
         return enif_make_badarg(env);
     }
+    cuCtxSetCurrent(ctxRef->ctx);
     return enif_make_tuple2(env, ATOM_OK, first->buffer->intersect(env, second->buffer));
+}
+
+ERL_NIF_TERM pteracuda_nifs_buffer_minmax(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    PCudaContextRef *ctxRef;
+    PCudaBufferRef *bufRef;
+    if (argc !=2 || !enif_get_resource(env, argv[0], pteracuda_context_resource, (void **) &ctxRef) ||
+        !enif_get_resource(env, argv[1], pteracuda_buffer_resource, (void **) &bufRef)) {
+        return enif_make_badarg(env);
+    }
+    if (bufRef->buffer->size() == 0) {
+        return enif_make_tuple2(env, ATOM_OK, enif_make_tuple2(env, enif_make_int(env, 0),
+                                                               enif_make_int(env, 0)));
+    }
+    cuCtxSetCurrent(ctxRef->ctx);
+    return enif_make_tuple2(env, ATOM_OK, bufRef->buffer->minmax(env));
 }
