@@ -16,7 +16,8 @@
          new_context/1,
          destroy_context/1]).
 
--export([new_buffer/0,
+-export([new_int_buffer/0,
+         new_string_buffer/0,
          destroy_buffer/1,
          buffer_size/1]).
 
@@ -41,7 +42,10 @@ new_context(_DeviceNum) ->
 destroy_context(_Ctx) ->
     ?MISSING_NIF.
 
-new_buffer() ->
+new_int_buffer() ->
+    ?MISSING_NIF.
+
+new_string_buffer() ->
     ?MISSING_NIF.
 
 destroy_buffer(_Buffer) ->
@@ -94,17 +98,17 @@ init() ->
 -ifdef(TEST).
 
 create_destroy_test() ->
-    {ok, Buf} = pteracuda_nifs:new_buffer(),
+    {ok, Buf} = pteracuda_nifs:new_int_buffer(),
     ok = pteracuda_nifs:destroy_buffer(Buf).
 
 create_write_destroy_test() ->
-    {ok, Buf} = pteracuda_nifs:new_buffer(),
+    {ok, Buf} = pteracuda_nifs:new_int_buffer(),
     pteracuda_nifs:write_buffer(Buf, [1,2,3,4,5]),
     {ok, 5} = pteracuda_nifs:buffer_size(Buf),
     ok = pteracuda_nifs:destroy_buffer(Buf).
 
 create_write_delete_test() ->
-    {ok, Buf} = pteracuda_nifs:new_buffer(),
+    {ok, Buf} = pteracuda_nifs:new_int_buffer(),
     ok = pteracuda_nifs:write_buffer(Buf, [1,2,3,4,5]),
     ok = pteracuda_nifs:buffer_delete(Buf, 1),
     {ok, [1,3,4,5]} = pteracuda_nifs:read_buffer(Buf),
@@ -113,7 +117,7 @@ create_write_delete_test() ->
     pteracuda_nifs:destroy_buffer(Buf).
 
 insert_test() ->
-    {ok, Buf} = pteracuda_nifs:new_buffer(),
+    {ok, Buf} = pteracuda_nifs:new_int_buffer(),
     ok = pteracuda_nifs:buffer_insert(Buf, 0, 1),
     error = pteracuda_nifs:buffer_insert(Buf, 5, 2),
     {ok, [1]} = pteracuda_nifs:read_buffer(Buf),
@@ -124,7 +128,7 @@ insert_test() ->
     pteracuda_nifs:destroy_buffer(Buf).
 
 create_write_sort_destroy_test() ->
-    {ok, Buf} = pteracuda_nifs:new_buffer(),
+    {ok, Buf} = pteracuda_nifs:new_int_buffer(),
     {ok, Ctx} = pteracuda_nifs:new_context(),
     ok = pteracuda_nifs:write_buffer(Buf, [3,2,1,4,5]),
     {ok, 5} = pteracuda_nifs:buffer_size(Buf),
@@ -134,7 +138,7 @@ create_write_sort_destroy_test() ->
     ok = pteracuda_nifs:destroy_context(Ctx).
 
 create_write_clear_test() ->
-    {ok, Buf} = pteracuda_nifs:new_buffer(),
+    {ok, Buf} = pteracuda_nifs:new_int_buffer(),
     ok = pteracuda_nifs:write_buffer(Buf, [3,2,1,4,5]),
     {ok, 5} = pteracuda_nifs:buffer_size(Buf),
     pteracuda_nifs:clear_buffer(Buf),
@@ -142,7 +146,7 @@ create_write_clear_test() ->
     ok = pteracuda_nifs:destroy_buffer(Buf).
 
 create_write_contains_test() ->
-    {ok, Buf} = pteracuda_nifs:new_buffer(),
+    {ok, Buf} = pteracuda_nifs:new_int_buffer(),
     {ok, Ctx} = pteracuda_nifs:new_context(),
     N = lists:seq(1, 1000),
     ok = pteracuda_nifs:write_buffer(Buf, N),
@@ -152,17 +156,17 @@ create_write_contains_test() ->
     ok = pteracuda_nifs:destroy_context(Ctx).
 
 create_copy_test() ->
-    {ok, Buf} = pteracuda_nifs:new_buffer(),
+    {ok, Buf} = pteracuda_nifs:new_int_buffer(),
     ok = pteracuda_nifs:write_buffer(Buf, lists:seq(1, 1000)),
-    {ok, Buf1} = pteracuda_nifs:new_buffer(),
+    {ok, Buf1} = pteracuda_nifs:new_int_buffer(),
     ok = pteracuda_nifs:copy_buffer(Buf, Buf1),
     {ok, 1000} = pteracuda_nifs:buffer_size(Buf1),
     ok = pteracuda_nifs:destroy_buffer(Buf),
     ok = pteracuda_nifs:destroy_buffer(Buf1).
 
 intersection_test() ->
-    {ok, B1} = pteracuda_nifs:new_buffer(),
-    {ok, B2} = pteracuda_nifs:new_buffer(),
+    {ok, B1} = pteracuda_nifs:new_int_buffer(),
+    {ok, B2} = pteracuda_nifs:new_int_buffer(),
     {ok, Ctx} = pteracuda_nifs:new_context(),
     ok = pteracuda_nifs:write_buffer(B1, lists:seq(1, 100)),
     ok = pteracuda_nifs:write_buffer(B2, lists:seq(90, 190)),
@@ -173,7 +177,7 @@ intersection_test() ->
     pteracuda_nifs:destroy_buffer(B2).
 
 minmax_test() ->
-    {ok, B} = pteracuda_nifs:new_buffer(),
+    {ok, B} = pteracuda_nifs:new_int_buffer(),
     {ok, Ctx} = pteracuda_nifs:new_context(),
     F = fun(_, _) -> random:uniform(100) > 49 end,
     N = lists:sort(F, lists:seq(1, 5000)),

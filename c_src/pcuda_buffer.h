@@ -1,12 +1,14 @@
 #ifndef PCUDA_BUFFER
 #define PCUDA_BUFFER
 
+#include <string>
 #include <vector>
 
 #include "erl_nif.h"
 
 enum PCudaBufferTypes {
-    BUF_TYPE_INTEGER
+    BUF_TYPE_INTEGER,
+    BUF_TYPE_STRING
 };
 
 class PCudaBuffer {
@@ -45,5 +47,26 @@ public:
 
 protected:
     std::vector<long> *data;
+};
+
+class PCudaStringBuffer : public PCudaBuffer {
+public:
+    PCudaStringBuffer();
+    virtual ~PCudaStringBuffer();
+    virtual unsigned int size();
+    virtual PCudaBufferTypes type() { return BUF_TYPE_STRING; };
+    virtual bool sort();
+    virtual bool contains(ErlNifEnv *env, ERL_NIF_TERM rawTarget);
+    virtual ERL_NIF_TERM toErlTerms(ErlNifEnv *env);
+    virtual void write(ErlNifEnv *env, ERL_NIF_TERM data);
+    virtual void delete_at(unsigned long position);
+    virtual bool insert_at(unsigned long position, ErlNifEnv *env, ERL_NIF_TERM value);
+    virtual void clear();
+    virtual bool copy(PCudaBuffer *src);
+    virtual ERL_NIF_TERM intersect(ErlNifEnv *env, PCudaBuffer *other);
+    virtual ERL_NIF_TERM minmax(ErlNifEnv *env) { return enif_make_atom(env, "error"); };
+
+protected:
+    std::vector<std::string> *data;
 };
 #endif
