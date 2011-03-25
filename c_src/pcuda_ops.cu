@@ -72,6 +72,13 @@ bool pcuda_integer_sort(std::vector<long> *data) {
     return true;
 }
 
+bool pcuda_float_sort(std::vector<double> *data) {
+    thrust::device_vector<double> device = *data;
+    thrust::sort(device.begin(), device.end());
+    thrust::copy(device.begin(), device.end(), data->begin());
+    return true;
+}
+
 bool pcuda_string_sort(std::vector<std::string> *data) {
     printf("In pcuda_string_sort\n");
     thrust::device_vector<PCudaString> device;
@@ -104,8 +111,19 @@ bool pcuda_integer_binary_search(std::vector<long> *data, long target) {
     return thrust::binary_search(device.begin(), device.end(), target, thrust::less<long>());
 }
 
+bool pcuda_float_binary_search(std::vector<double> *data, double target) {
+    thrust::device_vector<double> device = *data;
+    return thrust::binary_search(device.begin(), device.end(), target, thrust::less<double>());
+}
+
 void pcuda_integer_intersection(std::vector<long> *first, std::vector<long> *second,
                                 std::vector<long> *intersection) {
+    thrust::set_intersection(first->begin(), first->end(),
+                             second->begin(), second->end(), std::back_inserter(*intersection));
+}
+
+void pcuda_float_intersection(std::vector<double> *first, std::vector<double> *second,
+                                std::vector<double> *intersection) {
     thrust::set_intersection(first->begin(), first->end(),
                              second->begin(), second->end(), std::back_inserter(*intersection));
 }
@@ -113,6 +131,13 @@ void pcuda_integer_intersection(std::vector<long> *first, std::vector<long> *sec
 void pcuda_integer_minmax(std::vector<long> *data, long *minmax) {
     thrust::pair<std::vector<long>::iterator,
                  std::vector<long>::iterator> result = thrust::minmax_element(data->begin(), data->end());
+    minmax[0] = *result.first;
+    minmax[1] = *result.second;
+}
+
+void pcuda_float_minmax(std::vector<double> *data, double *minmax) {
+    thrust::pair<std::vector<double>::iterator,
+                 std::vector<double>::iterator> result = thrust::minmax_element(data->begin(), data->end());
     minmax[0] = *result.first;
     minmax[1] = *result.second;
 }

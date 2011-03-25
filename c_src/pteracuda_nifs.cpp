@@ -35,6 +35,8 @@ extern "C" {
 
     ERL_NIF_TERM pteracuda_nifs_new_int_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_new_string_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+    ERL_NIF_TERM pteracuda_nifs_new_float_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
+
     ERL_NIF_TERM pteracuda_nifs_destroy_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
     ERL_NIF_TERM pteracuda_nifs_buffer_size(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]);
 
@@ -55,6 +57,7 @@ extern "C" {
         {"destroy_context", 1, pteracuda_nifs_destroy_context},
         {"new_int_buffer", 0, pteracuda_nifs_new_int_buffer},
         {"new_string_buffer", 0, pteracuda_nifs_new_string_buffer},
+        {"new_float_buffer", 0, pteracuda_nifs_new_float_buffer},
         {"destroy_buffer", 1, pteracuda_nifs_destroy_buffer},
         {"buffer_size", 1, pteracuda_nifs_buffer_size},
         {"write_buffer", 2, pteracuda_nifs_write_buffer},
@@ -164,6 +167,18 @@ ERL_NIF_TERM pteracuda_nifs_new_string_buffer(ErlNifEnv *env, int argc, const ER
         return OOM_ERROR;
     }
     ref->buffer = new PCudaStringBuffer();
+    ref->destroyed = false;
+    ERL_NIF_TERM res = enif_make_resource(env, ref);
+    enif_release_resource(ref);
+    return enif_make_tuple2(env, ATOM_OK, res);
+}
+
+ERL_NIF_TERM pteracuda_nifs_new_float_buffer(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    PCudaBufferRef *ref = (PCudaBufferRef *) enif_alloc_resource(pteracuda_buffer_resource, sizeof(PCudaBufferRef));
+    if (!ref) {
+        return OOM_ERROR;
+    }
+    ref->buffer = new PCudaFloatBuffer();
     ref->destroyed = false;
     ERL_NIF_TERM res = enif_make_resource(env, ref);
     enif_release_resource(ref);
